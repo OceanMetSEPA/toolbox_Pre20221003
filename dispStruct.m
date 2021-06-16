@@ -1,4 +1,4 @@
-function [ ] = dispStruct(s,rows2Display)
+function [ ] = dispStruct(s,varargin)
 % Display struct (array)
 %
 % This function displays a struct whose fields have equal length to the
@@ -29,6 +29,20 @@ if ~isstruct(s)
     error('Argument 1 should be struct')
 end
 
+
+options=struct;
+options.rows=[];
+options.transpose=false;
+
+% Old version of this function only had one optional argument. This is for
+% backwards compatability
+if nargin==2
+    rows2Display=varargin{1};
+else
+    options=checkArguments(options,varargin);
+    rows2Display=options.rows;
+end
+
 % Check field sizes
 fn=fieldnames(s);
 if length(s)==1 % struct, not struct array
@@ -43,7 +57,7 @@ else
 end
 
 % Do we want to filter rows?
-if nargin>1
+if ~isempty(rows2Display)
     if islogical(rows2Display)
         rows2Display=find(rows2Display);
     end
@@ -64,6 +78,9 @@ c=struct2cell(s)';
 % Prepare cell array for display
 fn=ungenvarname(fn'); %
 op=[fn;c];
+if options.transpose
+    op=op';
+end
 disp(op);
 
 
