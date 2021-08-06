@@ -141,13 +141,13 @@ for i=1:Ncol
     iColumnData=xlsCellArray(:,i); % Data for i'th column
     % Determine classes of column data:
     dataIsChar=cellfun(@ischar,iColumnData);
-    dataIsNumeric=cellfun(@isnumeric,iColumnData);   
+    dataIsNumeric=cellfun(@isnumeric,iColumnData);
     % Tinker with data depending on class of its elements
-    if ~any(dataIsChar) 
+    if ~any(dataIsChar)
         % If none of the column elements are chars, convert to matrix
         iColumnData=cell2mat(iColumnData);
     elseif all(dataIsChar) % all chars? Then convert to cell array
-        iColumnData=cellstr(iColumnData);      
+        iColumnData=cellstr(iColumnData);
     elseif all(dataIsChar|dataIsNumeric)
         % Columns with numeric values and NaNs read in as mixture of classes
         % (numeric and char (for NaNs))
@@ -158,10 +158,10 @@ for i=1:Ncol
             iColumnData=cell2mat(iColumnData);
         catch
             % oh well, leave as cell array
-        end        
+        end
     end
     % Now consider dates...
-    if isequal(sFieldNames{i},dateCol) % field is specified date column? 
+    if isequal(sFieldNames{i},dateCol) % field is specified date column?
         try
             iColumnData=datenumVariableFormat(iColumnData,options.dateFormat);
         catch
@@ -220,4 +220,41 @@ end
             end
         end
     end
+
+    function [ cellArray ] = rmNaNsFromCellArray(cellArray)
+        % Delete all rows/columns from a cell array consisting entirely of NaNs
+        %
+        % Raw data obtained using 'xlsread' function:
+        % [numData,txtData,rawData]=xlsread(xlsFile)
+        %
+        % rawData sometimes has rows/columns entireley of NaNs (?!) making it
+        % larger than necessary. This function cleans it up
+        %
+        % INPUT: cellArray
+        % OUTPUT: cellArray with NaN columns / rows removed
+        %
+        % EXAMPLE:
+        % x=num2cell([NaN,NaN,NaN,pi;1,NaN,3,4;NaN,NaN,NaN,NaN;5,NaN,6,8])
+        % rmNaNsFromCellArray(x) % removes 3rd row, 2rd column
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % $Workfile:   rmNaNsFromCellArray.m  $
+        % $Revision:   1.0  $
+        % $Author:   ted.schlicke  $
+        % $Date:   Apr 08 2014 14:02:50  $
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        if nargin==0
+            help rmNaNsFromCellArray
+            return
+        end
+        
+        cellIsNan=cellfun(@(x)all(isnan(x)),cellArray,'Uniform',false);
+        [Nrow,Ncol]=size(cellIsNan);
+        cols2Keep=~arrayfun(@(x)all([cellIsNan{:,x}]),1:Ncol);
+        rows2Keep=~arrayfun(@(x)all([cellIsNan{x,:}]),1:Nrow);
+        cellArray=cellArray(rows2Keep,cols2Keep);
+        
+    end
+
+
 end
