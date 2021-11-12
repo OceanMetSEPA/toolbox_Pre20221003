@@ -209,7 +209,7 @@ if(options.plotit)
     leg=legend([h1,h2]);
     set(leg,'Interpreter','none','location','best')
     sp2=subplot(2,1,2);
-    plot(lags,cc,'-xb')
+    plot(lags,cc,'-.b')
     str=sprintf('Cross-correlation: max lag at %d',ccPeakLag);
     set(get(sp2,'Title'),'String',str)
 end
