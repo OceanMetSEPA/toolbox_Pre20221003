@@ -199,8 +199,8 @@ if(options.plotit)
 %        x1=x1-mean(x1);
 %        x2=x2-mean(x2);
     end
-    h1=plot(t,x1,'-.r','DisplayName',inputname(1));
-    h2=plot(t,x2,'-.g','DisplayName',inputname(2));
+    h1=plot(t,x1,'.-r','DisplayName',inputname(1));
+    h2=plot(t,x2,'.-g','DisplayName',inputname(2));
     if relabel
         adjustAxes
     end
@@ -209,7 +209,7 @@ if(options.plotit)
     leg=legend([h1,h2]);
     set(leg,'Interpreter','none','location','best')
     sp2=subplot(2,1,2);
-    plot(lags,cc,'-.b')
+    plot(lags,cc,'.-b')
     str=sprintf('Cross-correlation: max lag at %d',ccPeakLag);
     set(get(sp2,'Title'),'String',str)
 end
