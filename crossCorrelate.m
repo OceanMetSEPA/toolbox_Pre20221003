@@ -19,11 +19,11 @@ function [varargout ] = crossCorrelate( x1,x2,varargin)
 %
 % OPTIONAL INPUTS:
 % flag ['none']
-%   'none' - leave calculated cross-correlation alone
-%   'biased' - scale cross-corretion by 1/N
+%   'none'     - leave calculated cross-correlation alone
+%   'biased'   - scale cross-corretion by 1/N
 %   'unbiased' - scale cross-correlation by 1/(N-maxLags)
 %   'coeff'    - normalise so autocorrelation at zero lag = 0
-% standardise [false] - remove mean & divide by standard deviation prior to calculation
+% standardise [true] - remove mean & divide by standard deviation prior to calculation
 % resample ([]) - if number provided, resample timeseries to this number of minutes
 % plot [false] - plot cross-correlation function
 %
@@ -43,14 +43,26 @@ function [varargout ] = crossCorrelate( x1,x2,varargin)
 %   x1 LAGS  x2  
 %   x2 LEADS x1 (x2 needs to be shifted to right i.e. to later times for best fit with x1)
 % r^2 value = coefficient of determination
+%
+% EXAMPLE:
+% x=sin(0:pi/180:5*pi); % 5 cycles of sinusoid
+% noiseFactor=1;
+% x1=x+noiseFactor*(rand(size(x))-0.5); % sinusoid with noise added
+% x2=circshift(x,-30)+noiseFactor*(rand(size(x1))-0.5); % shifted version of above, with noise added
+% cc=crossCorrelate(x1,x2,'standard',0,'plot',1);
+% cc2=xcorr(x1,x2);
+% max(abs(cc-cc2)) % ~ order 1e-13
 
+if nargin<2
+    help crossCorrelate
+    return
+end
 
 options=struct;
 options.plotit=false;
 options.flag='none';
-%options.flag='biased';
-options.resample=1;
-options.standardise=true;
+options.resample=[];
+options.standardise=true; % xcorr doesn't have this option
 options.verbose=false;
 options.centre=true;
 options.ndp=8;
@@ -58,14 +70,13 @@ options.maxLag=[];
 options.shift=true;
 options=checkArguments(options,varargin{:});
 
-%% Check inputs
+% Check inputs
 if ~isequal(class(x1),class(x2))
     error('Inputs have different class')
 end
 if isa(x1,'timeseries')
-% 1st input is a time-series. We assume second one is as well (sloppy!) and
-% crop them so they cover the time period. Note that we don't check precise
-% timings match. This could be made more robust!
+% 1st input is a time-series. From test above, they both are. Here we crop them so they cover the time period. 
+% Note that we don't check precise timings match. This could be made more robust!
     if ~isempty(options.resample)
         dt=options.resample/(24*60);
         if options.verbose
@@ -74,7 +85,16 @@ if isa(x1,'timeseries')
         x1=resample(x1,min(x1.Time):dt:max(x1.Time));
         x2=resample(x2,min(x2.Time):dt:max(x2.Time));
     end
-    % ensure timeseries match
+    % Potential issue with timeseries- data size depends on whether input
+    % data is a row or column vector?!
+    % N=1000;
+    % x=rand(N,1);
+    % timeseries(x)  % data size = N x 1
+    % timeseries(x') % data size = 1 x 1 x N
+    % Fix this potential issue:
+    x1.Data=squeeze(x1.Data);
+    x2.Data=squeeze(x2.Data);
+    % ensure timeseries overlap:
     ts1Times=roundn(x1.Time,-options.ndp);
     ts2Times=roundn(x2.Time,-options.ndp);
     t0=max(min(ts1Times),min(ts2Times));
@@ -85,8 +105,8 @@ if isa(x1,'timeseries')
     set(x2,'Time',x2.Time(k),'Data',x2.Data(k,:));
     t=x1.Time;
     % Extract 1st data sets of timeseries
-    x1=x1.Data(:,1);
-    x2=x2.Data(:,1);
+    x1=squeeze(x1.Data);
+    x2=squeeze(x2.Data);
 end
 
 N=max([length(x1),length(x2)]);
@@ -129,7 +149,6 @@ if isempty(options.maxLag)
         options.maxLag=length(x1);
     end
 end
-%fprintf('Max lag to check= %d\n',options.maxLag)
 
 if(all(isnan(x1))||all(isnan(x2)))
     warning('All data are NaNs; returning...\n')
@@ -137,7 +156,6 @@ if(all(isnan(x1))||all(isnan(x2)))
 end
 
 lags=(-N+1:N-1); % these are the lag indices
-%cc=fftshift(ifft(fft(x1,Ncc).*conj(fft(x2,Ncc)))); % Don't need toolbox for this!
 cc=ifft(fft(x1,Ncc).*conj(fft(x2,Ncc)));
 if options.shift
     cc=fftshift(cc);
@@ -185,8 +203,8 @@ if(options.plotit)
         adjustAxes
     end
     set(get(sp1,'Title'),'String','Time-series')
-    legend([h1,h2])
-%    prepareFigure('title',sprintf('Flag ''%s'' and max lag at %d',ccOption,ccPeakLag));
+    leg=legend([h1,h2]);
+    set(leg,'Interpreter','none')
     sp2=subplot(2,1,2);
     plot(lags,cc,'-xb')
     str=sprintf('Cross-correlation: max lag at %d',ccPeakLag);
@@ -201,7 +219,7 @@ else
     str='MATCHES';
 end
 
-if options.verbose
+if options.verbose || nargout==0
     fprintf('CC peak at index = %d; %s %s %s\n',ccPeakLag,inputname(1),str,inputname(2))
 end
 % Prepare outputs depending on how many user requested
@@ -214,8 +232,4 @@ if nargout>0
         end
     end
 end
-
 end
-
-
-
