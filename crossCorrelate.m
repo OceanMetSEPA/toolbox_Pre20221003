@@ -26,6 +26,7 @@ function [varargout ] = crossCorrelate( x1,x2,varargin)
 % standardise [true] - remove mean & divide by standard deviation prior to calculation
 % resample ([]) - if number provided, resample timeseries to this number of minutes
 % plot [false] - plot cross-correlation function
+% title []     - include this string in title to first subplot
 %
 % OUTPUT
 % cc - cross-correlation values
@@ -68,6 +69,7 @@ options.centre=true;
 options.ndp=8;
 options.maxLag=[];
 options.shift=true;
+options.title=[];
 options=checkArguments(options,varargin{:});
 
 % Check inputs
@@ -197,14 +199,15 @@ if(options.plotit)
 %        x1=x1-mean(x1);
 %        x2=x2-mean(x2);
     end
-    h1=plot(t,x1,'-xr','DisplayName',inputname(1));
-    h2=plot(t,x2,'-xg','DisplayName',inputname(2));
+    h1=plot(t,x1,'-.r','DisplayName',inputname(1));
+    h2=plot(t,x2,'-.g','DisplayName',inputname(2));
     if relabel
         adjustAxes
     end
-    set(get(sp1,'Title'),'String','Time-series')
+    str=sprintf('%s Time-series ',options.title);
+    set(get(sp1,'Title'),'String',str)
     leg=legend([h1,h2]);
-    set(leg,'Interpreter','none')
+    set(leg,'Interpreter','none','location','best')
     sp2=subplot(2,1,2);
     plot(lags,cc,'-xb')
     str=sprintf('Cross-correlation: max lag at %d',ccPeakLag);
