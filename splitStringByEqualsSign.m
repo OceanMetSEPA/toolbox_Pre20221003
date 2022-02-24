@@ -3,20 +3,20 @@ function [ varargout ] = splitStringByEqualsSign( str,varargin )
 %
 % This function splits string(s) by the '=' character. String sections to
 % the left of the '=' are interpreted as the parameter, and those to the
-% right of the '=' are interpreted as the value. Strings without a single '=' are ignored. 
+% right of the '=' are interpreted as the value. Strings without a single '=' are ignored.
 %
-% INPUT: 
+% INPUT:
 % char/cell array of strings
-% 
+%
 % Optional input:
 % minAsciiValue [40] - ignore characters whose ascii value is less than
 % this (to ignore spaces, special characters etc)
 % numeric (true) - attempt to convert value from string to numeric
-% 
+%
 % OUTPUT:
 % If single output requested, output is a struct with:
 %    fieldnames : strings at left of '=' (passed through genvarname)
-%    values : strings/numbers at right of '=' 
+%    values : strings/numbers at right of '='
 %
 % If two outputs requested, they are:
 %    parameters (LHS of =) and
@@ -25,7 +25,7 @@ function [ varargout ] = splitStringByEqualsSign( str,varargin )
 % EXAMPLE:
 % str={'fish=3.14159','phi=1.618','seq=1,2,3,4,5','me=frog','test==ignore','abcde','sum=3+4'};
 % splitStringByEqualsSign(str)
-% ans = 
+% ans =
 %     fish: 3.14159
 %      phi: 1.618
 %      seq: [1 2 3 4 5]
@@ -77,7 +77,7 @@ ascii=cellfun(@(x)x(x>=options.minAsciiValue),ascii,'unif',0);
 str=cellfun(@char,ascii,'unif',0);
 
 if isempty(str)
-%    warning('No strings containing single ''='' found')
+    %    warning('No strings containing single ''='' found')
     varargout{1}=[];
     return
 end
@@ -90,7 +90,7 @@ parameters=str(:,1);
 values=str(:,2);
 N=length(parameters);
 
-% Convert to numeric? 
+% Convert to numeric?
 if options.numeric
     for i=1:N
         ivalue=values{i};
@@ -100,9 +100,13 @@ if options.numeric
             % use str2num rather than str2double, even though it's slower
             % (str2double interprets commas as thousands separator, rather
             % than an indicator of separate values. This messes up e.g. datevecs)
-            numericValue=str2num(ivalue); % warning: str2num is slower than str2num
-            if ~any(isnan(numericValue)) && ~all(isempty(numericValue))
-                values{i}=numericValue;
+            try
+                numericValue=str2num(ivalue); % warning: str2num is slower than str2num
+                if ~any(isnan(numericValue)) && ~all(isempty(numericValue))
+                    values{i}=numericValue;
+                end
+            catch
+                % isname(template) fails when splitting NewDepomod template files
             end
         end
     end
@@ -119,6 +123,5 @@ elseif nargout==2
     varargout{1}=parameters;
     varargout{2}=values;
 end
-
 
 end
