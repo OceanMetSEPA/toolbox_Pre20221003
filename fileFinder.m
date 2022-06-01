@@ -66,7 +66,7 @@ for i=1:Nd
     if ~isempty(ast) % is it there?
         slash=regexp(diri,filesep); % if so, find last '\' in path
         stem=diri(1:(max(slash(slash<ast)))); % keep bit before that
-        lsm=cellstr(ls(diri)); % list 
+        lsm=cellstr(ls(diri)); % list
         lsm=lsm(~stringFinder(lsm,{'.','..'},'type','or','output','bool')); % remove . and ..
         diri=strcat(stem,lsm);
     else
@@ -78,7 +78,7 @@ arg=horzcat(p{:}); % Bundle these directories together
 
 mp=regexp(path,';','split');
 if ~isempty(arg)
-    % are directories in matlab path? 
+    % are directories in matlab path?
     for i=1:length(arg)
         str=stringFinder(mp,arg{i},'type','end','ignorecase',true);
         if ~isempty(str)
@@ -87,7 +87,7 @@ if ~isempty(arg)
             arg(i)=str;
         end
     end
-   
+    
 else% didn't supply list of directories?
     arg={pwd}; % then check pwd
 end
@@ -98,7 +98,7 @@ else
     varargin(1)=[]; % remove our directories from varargin list (we've got the info we need!)
 end
 directories=arg;
-%    
+%
 % 2) Now determine strings we're looking for in file/directory names
 % How many vargs do we have?
 Nargs=length(varargin);
@@ -162,7 +162,7 @@ if ~isempty(argNames)
 end
 
 if(options.verbose)
-%    fprintf('About to start looping through %d directories...\n',Nd)
+    %    fprintf('About to start looping through %d directories...\n',Nd)
 end
 filesFound=cell(Nd,1); % space to store our matching files
 
@@ -179,24 +179,27 @@ for iInputDir=1:Nd % loop through input directories
     for iDir2Check=1:NDir2Check % For each subdirectory
         checkThisDir=dir2Check{iDir2Check};
         if(options.verbose)
-%            fprintf('Checking directory ''%s'' (%d of %d)\n',checkThisDir,iDir2Check,NDir2Check)
+            %            fprintf('Checking directory ''%s'' (%d of %d)\n',checkThisDir,iDir2Check,NDir2Check)
         end
         %        fprintf('Checking subdir ''%s'' (%d of %d)\n',subdir,subdiri,length(subdirs))
         % Determine separator to use between path (directory) and file name.
         % If path ends with '\', don't need one
         % Otherwise, we'll introduce a slash
+        % NB - fullfile function can sort this for us, but need cellfun to
+        % call it for multiple files and it's faster to sort it ourselves
         if checkThisDir(length(checkThisDir))~=filesep
-            %            separator='\';
-            %        else
-            %            separator='';
             checkThisDir=sprintf('%s%s',checkThisDir,filesep);
         end
         % Call function to look for strings in contents of this directory
-        filesInDirectory=ls(checkThisDir);
+        filesInDirectory=cellstr(ls(checkThisDir));
+        % NB 20220601 - MUCH faster (>100x) if we convert char returned by
+        % ls function to cellstr
         if ~isempty(filesInDirectory)
             % should we include path in our string that we're testing?
             if options.path
                 strings2Check=strcat(checkThisDir,filesInDirectory);
+                % See comment above about fullfile speed
+                %strings2Check=cellfun(@(x)fullfile(checkThisDir,x),filesInDirectory,'unif',0);
             else
                 strings2Check=filesInDirectory;
             end
